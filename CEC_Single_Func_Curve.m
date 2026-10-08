@@ -1,34 +1,12 @@
 function CEC_Single_Func_Curve()
-% =========================================================================
-% CEC Single Function Test Program
-% Purpose: Test a single specified CEC benchmark function with all
-%          comparison algorithms and display their convergence curves
-%          (no images are saved).
-% The user can freely modify the following in the "User Parameters" block:
-%       - CEC test suite year (2017 or 2022)
-%       - Test function number
-%       - Population size (number of particles)
-%       - Maximum number of iterations
-%       - Problem dimension
-% =========================================================================
     clear; clc; close all;
-
-    %% ==================== User Parameters (edit freely) ====================
-    CEC_Year   = 2022;   % Test suite: 2017 or 2022
-    Func_Num   = 1;      % Function number (CEC2017: 1, 3:30; CEC2022: 1:12)
-    N_init     = 50;     % Population size (number of particles)
-    Max_iter   = 3000;   % Maximum number of iterations
-    Dim        = 20;     % Problem dimension
-    
-    % List of algorithms to compare ('DMOU' is the proposed algorithm;
-    % the rest are baselines).
+    CEC_Year   = 2022;
+    Func_Num   = 1;
+    N_init     = 50;
+    Max_iter   = 3000;
+    Dim        = 20;
     Algo_names = [{'DMOU'}, {'PSO','GWO','MVO','SCA','AO','DBO','INFO','NRBO','DP'}];
-    % ========================================================================
-
-    % Boundaries (official CEC standard bounds)
     LB = -100; UB = 100;
-
-    % -------- Load the CEC benchmark function --------
     root_dir = pwd;
     addpath(root_dir);
     if CEC_Year == 2017
@@ -47,18 +25,14 @@ function CEC_Single_Func_Curve()
         error('CEC function folder does not exist: %s', suite_path);
     end
     cd(suite_path);
-
-    % -------- Run each algorithm --------
     num_algos   = length(Algo_names);
-    curves_all  = zeros(num_algos, Max_iter);  % Store each convergence curve
-    best_all    = zeros(num_algos, 1);         % Final best value
-    time_all    = zeros(num_algos, 1);         % Runtime
-
+    curves_all  = zeros(num_algos, Max_iter);
+    best_all    = zeros(num_algos, 1);
+    time_all    = zeros(num_algos, 1);
     for a = 1:num_algos
         algo_name = Algo_names{a};
         fprintf('Running algorithm: %-6s ... ', algo_name);
-
-        rng(1000 + a, 'twister');   % Fixed random seed for reproducibility
+        rng(1000 + a, 'twister');
         t_start = tic;
         try
             if strcmp(algo_name, 'DMOU')
@@ -73,8 +47,6 @@ function CEC_Single_Func_Curve()
             curve  = NaN(1, Max_iter);
         end
         time_all(a) = toc(t_start);
-
-        % Unify curve length
         curve = curve(:)';
         if length(curve) < Max_iter
             curve = [curve, NaN(1, Max_iter - length(curve))];
@@ -83,25 +55,18 @@ function CEC_Single_Func_Curve()
         end
         curves_all(a, :) = curve;
         best_all(a)      = best_f;
-
         fprintf('best = %.6e, time = %.2f s\n', best_f, time_all(a));
     end
-
     cd(root_dir);
     rmpath(root_dir);
-
-    %% ==================== Plot convergence curves ====================
     figure('Position', [200, 150, 900, 620], ...
            'Name', sprintf('CEC%d F%d Convergence Curves', CEC_Year, Func_Num));
-
     hold on;
     line_styles = {'-','--','-.',':','-','--','-.',':','-','--'};
     markers     = {'o','s','^','d','v','>','<','p','h','x'};
     colors      = lines(num_algos);
-
     for a = 1:num_algos
         y = curves_all(a, :);
-        % Handle non-positive / NaN values for log-scale plotting
         y(y <= 0) = eps;
         y(isnan(y)) = NaN;
         plot(1:Max_iter, y, ...
@@ -114,7 +79,6 @@ function CEC_Single_Func_Curve()
              'DisplayName', Algo_names{a});
     end
     hold off;
-
     set(gca, 'YScale', 'log');
     xlabel('Iteration', 'FontSize', 12);
     ylabel('Best Fitness (log scale)', 'FontSize', 12);
@@ -122,8 +86,6 @@ function CEC_Single_Func_Curve()
                   CEC_Year, Func_Num, Dim, N_init, Max_iter), 'FontSize', 13);
     legend('Location', 'northeastoutside', 'FontSize', 10);
     grid on; box on;
-
-    %% ==================== Print result summary ====================
     fprintf('\n----------------- Result Summary -----------------\n');
     fprintf('%-8s %-18s %-10s\n', 'Algorithm', 'Final Best', 'Time (s)');
     fprintf('--------------------------------------------------\n');
